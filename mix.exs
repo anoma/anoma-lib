@@ -22,6 +22,7 @@ defmodule AnomaLib.MixProject do
         plt_add_apps: [:mix, :ex_unit, :mnesia]
       ],
       config_path: "config/config.exs",
+      package: package(),
       deps_path: "deps",
       lockfile: "mix.lock",
       elixir: "~> 1.17",
@@ -36,6 +37,14 @@ defmodule AnomaLib.MixProject do
   def application do
     [
       included_applications: [:mnesia]
+    ]
+  end
+
+  def package do
+    [
+      maintainers: ["Mariari", " Raymond E. Pasco"],
+      name: :anoma_lib,
+      licenses: ["MIT"]
     ]
   end
 
