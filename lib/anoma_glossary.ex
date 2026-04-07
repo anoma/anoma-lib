@@ -4,8 +4,7 @@ defmodule Glossary do
   define transaction_candidate do
     """
     A transaction candidate is `t:Noun.t/0` that evaluates to a valid or
-    invalid `transaction` for a specified
-    `t:Anoma.Node.Executor.Worker.backend/0`
+    invalid `transaction` for a specified backend.
     """
   end
 
