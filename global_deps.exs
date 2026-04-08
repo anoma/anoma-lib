@@ -10,7 +10,9 @@
   {:ex_secp256k1, "~> 0.7.4"},
   {:jason, "~> 1.4"},
   {:memoize, "~> 1.4.3"},
-  {:mnesia_rocksdb, git: "https://github.com/aeternity/mnesia_rocksdb"},
+  {:mnesia_rocksdb,
+   git: "https://github.com/mariari/mnesia_rocksdb",
+   branch: "mariari/bump-rocksdb-9.10"},
   {:murmur, "~> 2.0"},
   {:typed_struct, "~> 0.3.0"},
   # non-runtime dependencies below
