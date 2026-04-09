@@ -1,0 +1,5 @@
+/+  resource-machine
+!.
+=>  resource-machine
+|%
+--
