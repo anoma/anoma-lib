@@ -16,6 +16,11 @@ defmodule VariableMerkleTree do
   @type hash_size :: <<_::256>>
 
   @typedoc """
+  I am the type of the hash function used for the tree
+  """
+  @type hash_fn :: (binary() -> hash_size())
+
+  @typedoc """
   I am the type of the merkle path.
 
   I represent a list of node neighbors alongside a flag telling whether the
@@ -24,6 +29,9 @@ defmodule VariableMerkleTree do
   @type path() :: [{hash_size, boolean}]
 
   typedstruct enforce: true do
+    # the choice of a 256-bit hash function
+    field(:hash_fn, hash_fn(), default: &__MODULE__.hash/1)
+
     # map from levels to the map from index to the node
     field(:nodes, %{integer() => %{integer() => hash_size()}},
       default: %{
@@ -49,8 +57,9 @@ defmodule VariableMerkleTree do
   I hash some bytes with a selected hash funciton
   """
   @spec hash(binary()) :: hash_size()
-  def hash(bytes) do
-    :crypto.hash(:sha256, bytes)
+  @spec hash(hash_fn, binary()) :: hash_size()
+  def hash(hash_fn \\ fn x -> :crypto.hash(:sha256, x) end, bytes) do
+    hash_fn.(bytes)
   end
 
   @doc """
@@ -59,32 +68,34 @@ defmodule VariableMerkleTree do
   Literally the hash of the string "EMPTY"
   """
   @spec empty() :: hash_size()
-  def empty() do
-    hash("EMPTY")
+  @spec empty(hash_fn()) :: hash_size()
+  def empty(hash_fn \\ fn x -> :crypto.hash(:sha256, x) end) do
+    hash(hash_fn, "EMPTY")
   end
 
   @doc """
   I create a new variable size sparse merkle tree
   """
   @spec new() :: t()
-  def new() do
+  @spec new(hash_fn()) :: t()
+  def new(hash_fn \\ fn x -> :crypto.hash(:sha256, x) end) do
     # Assume we have a tree at most of depth 32
     empty_nodes =
-      for i <- 1..31, reduce: %{0 => :crypto.hash(:sha256, "EMPTY")} do
+      for i <- 1..31, reduce: %{0 => empty(hash_fn)} do
         acc ->
           previous_empty_hash = Map.get(acc, i - 1)
 
           Map.put(
             acc,
             i,
-            :crypto.hash(
-              :sha256,
+            hash(
+              hash_fn,
               previous_empty_hash <> previous_empty_hash
             )
           )
       end
 
-    %VariableMerkleTree{empty_nodes: empty_nodes}
+    %VariableMerkleTree{empty_nodes: empty_nodes, hash_fn: hash_fn}
   end
 
   @doc """
@@ -131,7 +142,14 @@ defmodule VariableMerkleTree do
 
     # Add leaves and recompute needed intermediary nodes
     new_nodes =
-      compute_nodes(depth, tree.nodes, tree.empty_nodes, index, leaves)
+      compute_nodes(
+        tree.hash_fn,
+        depth,
+        tree.nodes,
+        tree.empty_nodes,
+        index,
+        leaves
+      )
 
     %VariableMerkleTree{
       tree
@@ -143,12 +161,14 @@ defmodule VariableMerkleTree do
   end
 
   @doc """
-  Given a tree and a hash, generate a merkle path to the lead, nil if absent.
+  Given a tree and a hash, generate a merkle path to the leaf, nil if absent.
   """
   @spec generate_proof(t(), hash_size()) :: {path(), hash_size()} | nil
   def generate_proof(tree, leaf) do
     # Get the index of the leaf
     index_found = Map.get(tree.leaf_map, leaf)
+    # fetch the hash function
+    hash_fn = tree.hash_fn
 
     if index_found do
       {path, root, _index} =
@@ -168,7 +188,7 @@ defmodule VariableMerkleTree do
 
               # Hash the node on the left and sibling on the right
               # The index of its parents is going to be index / 2
-              {path ++ [{sibling, true}], hash(node <> sibling),
+              {path ++ [{sibling, true}], hash(hash_fn, node <> sibling),
                div(index, 2)}
             else
               # If the node is a right one, take its left sibling
@@ -176,26 +196,27 @@ defmodule VariableMerkleTree do
 
               # Hash the node on the right and sibling on the left
               # The index of its parents is going to be (index - 1) / 2
-              {path ++ [{sibling, false}], hash(sibling <> node),
+              {path ++ [{sibling, false}], hash(hash_fn, sibling <> node),
                div(index - 1, 2)}
             end
         end
+
       {path, root}
     end
   end
 
   @doc """
-  Given a leaf, a root, and a path, verify that the path starting wit hthe leaf
-  produces the root.
+  Given a leaf, a path, and a root with a corresponding hash function, verify
+  that the path starting with the leaf produces the root.
   """
-  @spec verify_proof(hash_size(), path(), hash_size()) :: boolean()
-  def verify_proof(leaf, path, root) do
+  @spec verify_proof(hash_size(), path(), hash_size(), hash_fn()) :: boolean()
+  def verify_proof(leaf, path, root, hash_fn) do
     calculated_root =
       Enum.reduce(path, leaf, fn {neighbour, is_left}, acc ->
         if is_left do
-          hash(acc <> neighbour)
+          hash(hash_fn, acc <> neighbour)
         else
-          hash(neighbour <> acc)
+          hash(hash_fn, neighbour <> acc)
         end
       end)
 
@@ -203,13 +224,14 @@ defmodule VariableMerkleTree do
   end
 
   @spec compute_nodes(
+          hash_fn(),
           non_neg_integer,
           %{integer() => %{integer() => hash_size()}},
           %{integer() => hash_size()},
           non_neg_integer(),
           [hash_size()]
         ) :: %{integer() => %{integer() => hash_size()}}
-  defp compute_nodes(depth, nodes, empty_nodes, index, leaves) do
+  defp compute_nodes(hash_fn, depth, nodes, empty_nodes, index, leaves) do
     # Iterate over each level of the tree, updating
     # only the parent nodes of the given leaves
     {new_nodes, _, _} =
@@ -236,7 +258,8 @@ defmodule VariableMerkleTree do
                 if left_sibling do
                   # Hash the left sibling with the current node
                   {Map.put(acc_current_nodes, j, node),
-                   [hash(left_sibling <> node) | parents], j + 1, nil}
+                   [hash(hash_fn, left_sibling <> node) | parents], j + 1,
+                   nil}
                 else
                   # record the current node as a left sibling
                   {Map.put(acc_current_nodes, j, node), parents, j + 1, node}
@@ -248,7 +271,7 @@ defmodule VariableMerkleTree do
           final_parents =
             if final_left_sibling do
               [
-                hash(final_left_sibling <> Map.get(empty_nodes, i))
+                hash(hash_fn, final_left_sibling <> Map.get(empty_nodes, i))
                 | parents
               ]
             else
