@@ -35,7 +35,7 @@ defmodule VariableMerkleTree do
     # map from levels to the map from index to the node
     field(:nodes, %{integer() => %{integer() => hash_size()}},
       default: %{
-        0 => %{0 => :crypto.hash(:sha256, "EMPTY")}
+        0 => %{}
       }
     )
 
@@ -95,7 +95,11 @@ defmodule VariableMerkleTree do
           )
       end
 
-    %VariableMerkleTree{empty_nodes: empty_nodes, hash_fn: hash_fn}
+    %VariableMerkleTree{
+      empty_nodes: empty_nodes,
+      hash_fn: hash_fn,
+      nodes: %{0 => %{0 => empty(hash_fn)}}
+    }
   end
 
   @doc """
