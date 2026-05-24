@@ -1,5 +1,9 @@
 # keep me alphabetized; non-runtime dependencies at the bottom.
 [
+  # provides the ArmOpenvm.Verifier NIF (verify_transaction + extraction NIFs)
+  {:arm_openvm,
+   git: "https://github.com/anoma/arm-openvm",
+   ref: "709ed212826af747c726ad52c4d258aea4dcba00"},
   {:cairo,
    git: "https://github.com/anoma/aarm-cairo",
    ref: "a5a2778a4ad9b2ff40cea471ac777089149b9fda"},

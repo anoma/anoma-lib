@@ -1,4 +1,5 @@
 %{
+  "arm_openvm": {:git, "https://github.com/anoma/arm-openvm", "709ed212826af747c726ad52c4d258aea4dcba00", [ref: "709ed212826af747c726ad52c4d258aea4dcba00"]},
   "bunt": {:hex, :bunt, "1.0.0", "081c2c665f086849e6d57900292b3a161727ab40431219529f13c4ddcf3e7a44", [:mix], [], "hexpm", "dc5f86aa08a5f6fa6b8096f0735c4e76d54ae5c9fa2c143e5a1fc7c1cd9bb6b5"},
   "cairo": {:git, "https://github.com/anoma/aarm-cairo", "a5a2778a4ad9b2ff40cea471ac777089149b9fda", [ref: "a5a2778a4ad9b2ff40cea471ac777089149b9fda"]},
   "credo": {:hex, :credo, "1.7.17", "f92b6aa5b26301eaa5a35e4d48ebf5aa1e7094ac00ae38f87086c562caf8a22f", [:mix], [{:bunt, "~> 0.2.1 or ~> 1.0", [hex: :bunt, repo: "hexpm", optional: false]}, {:file_system, "~> 0.2 or ~> 1.0", [hex: :file_system, repo: "hexpm", optional: false]}, {:jason, "~> 1.0", [hex: :jason, repo: "hexpm", optional: false]}], "hexpm", "1eb5645c835f0b6c9b5410f94b5a185057bcf6d62a9c2b476da971cde8749645"},
