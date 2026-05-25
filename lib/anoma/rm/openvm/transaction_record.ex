@@ -4,6 +4,7 @@ defmodule Anoma.RM.OpenVM.TransactionRecord do
 
   ### Public API
   - `verify/1`
+  - `verify_and_extract/1`
   - `nullifiers/1`
   - `commitments/1`
   - `roots/1`
@@ -26,6 +27,18 @@ defmodule Anoma.RM.OpenVM.TransactionRecord do
   @spec verify(t()) :: boolean() | {:error, term()}
   def verify(%TransactionRecord{bytes: bytes}) do
     ArmOpenvm.Verifier.verify_transaction(bytes)
+  end
+
+  @doc """
+  Verify and extract in one NIF pass. Returns `{consumed, created, roots}`,
+  where each `consumed`/`created` entry is `{tag, app_data_blobs}` on success
+  """
+  @spec verify_and_extract(t()) ::
+          {[{<<_::256>>, ArmOpenvm.Verifier.app_data_blobs()}],
+           [{<<_::256>>, ArmOpenvm.Verifier.app_data_blobs()}], [<<_::256>>]}
+          | {:error, term()}
+  def verify_and_extract(%TransactionRecord{bytes: bytes}) do
+    ArmOpenvm.Verifier.verify_and_extract(bytes)
   end
 
   @doc "Nullifiers (32-byte binaries) in transaction order."
