@@ -97,26 +97,21 @@ defimpl Anoma.RM.Intent, for: Anoma.RM.OpenVM.TransactionRecord do
 
   @impl true
   def nullifiers(tr = %TransactionRecord{}) do
-    case TransactionRecord.nullifiers(tr) do
-      nullifiers when is_list(nullifiers) ->
-        MapSet.new(nullifiers)
-
-      {:error, reason} ->
-        raise ArgumentError,
-              "undecodable openvm transaction: #{inspect(reason)}"
-    end
+    tr |> TransactionRecord.nullifiers() |> tags_to_set()
   end
 
   @impl true
   def commitments(tr = %TransactionRecord{}) do
-    case TransactionRecord.commitments(tr) do
-      commitments when is_list(commitments) ->
-        MapSet.new(commitments)
+    tr |> TransactionRecord.commitments() |> tags_to_set()
+  end
 
-      {:error, reason} ->
-        raise ArgumentError,
-              "undecodable openvm transaction: #{inspect(reason)}"
-    end
+  @spec tags_to_set([binary()] | {:error, term()}) :: MapSet.t()
+  defp tags_to_set(tags) when is_list(tags) do
+    MapSet.new(tags)
+  end
+
+  defp tags_to_set({:error, reason}) do
+    raise ArgumentError, "undecodable openvm transaction: #{inspect(reason)}"
   end
 
   # A proven transaction's proofs bind the full bundle, so two cannot be
