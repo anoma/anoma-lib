@@ -199,7 +199,7 @@ defmodule VariableMerkleTree do
 
               # Hash the node on the left and sibling on the right
               # The index of its parents is going to be index / 2
-              {path ++ [{sibling, false}], hash(hash_fn, node <> sibling),
+              {[{sibling, false} | path], hash(hash_fn, node <> sibling),
                div(index, 2)}
             else
               # If the node is a right one, take its left sibling
@@ -207,12 +207,12 @@ defmodule VariableMerkleTree do
 
               # Hash the node on the right and sibling on the left
               # The index of its parents is going to be (index - 1) / 2
-              {path ++ [{sibling, true}], hash(hash_fn, sibling <> node),
+              {[{sibling, true} | path], hash(hash_fn, sibling <> node),
                div(index - 1, 2)}
             end
         end
 
-      {path, root}
+      {Enum.reverse(path), root}
     end
   end
 
