@@ -30,7 +30,7 @@ defmodule VariableMerkleTree do
 
   typedstruct enforce: true do
     # the choice of a 256-bit hash function
-    field(:hash_fn, hash_fn(), default: &__MODULE__.hash/1)
+    field(:hash_fn, hash_fn(), default: &__MODULE__.default_hash/1)
 
     # map from levels to the map from index to the node
     field(:nodes, %{integer() => %{integer() => hash_size()}},
@@ -54,11 +54,19 @@ defmodule VariableMerkleTree do
   end
 
   @doc """
-  I hash some bytes with a selected hash funciton
+  I am the default hash function: keccak256, matching arm-openvm's tree.
+  """
+  @spec default_hash(binary()) :: hash_size()
+  def default_hash(bytes) do
+    ExKeccak.hash_256(bytes)
+  end
+
+  @doc """
+  I hash some bytes with a selected hash function
   """
   @spec hash(binary()) :: hash_size()
   @spec hash(hash_fn, binary()) :: hash_size()
-  def hash(hash_fn \\ fn x -> :crypto.hash(:sha256, x) end, bytes) do
+  def hash(hash_fn \\ &__MODULE__.default_hash/1, bytes) do
     hash_fn.(bytes)
   end
 
@@ -69,7 +77,7 @@ defmodule VariableMerkleTree do
   """
   @spec empty() :: hash_size()
   @spec empty(hash_fn()) :: hash_size()
-  def empty(hash_fn \\ fn x -> :crypto.hash(:sha256, x) end) do
+  def empty(hash_fn \\ &__MODULE__.default_hash/1) do
     hash(hash_fn, "EMPTY")
   end
 
@@ -78,7 +86,7 @@ defmodule VariableMerkleTree do
   """
   @spec new() :: t()
   @spec new(hash_fn()) :: t()
-  def new(hash_fn \\ fn x -> :crypto.hash(:sha256, x) end) do
+  def new(hash_fn \\ &__MODULE__.default_hash/1) do
     # Assume we have a tree at most of depth 32
     empty_nodes =
       for i <- 1..31, reduce: %{0 => empty(hash_fn)} do
