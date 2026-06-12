@@ -10,6 +10,8 @@ defmodule VariableMerkleTree do
 
   alias __MODULE__
 
+  @max_depth 32
+
   @typedoc """
   I am the type of the hash length used by the merkle tree
   """
@@ -87,9 +89,9 @@ defmodule VariableMerkleTree do
   @spec new() :: t()
   @spec new(hash_fn()) :: t()
   def new(hash_fn \\ &__MODULE__.default_hash/1) do
-    # Assume we have a tree at most of depth 32
+    # The root level of a full-depth tree needs no padding
     empty_nodes =
-      for i <- 1..31, reduce: %{0 => empty(hash_fn)} do
+      for i <- 1..(@max_depth - 1), reduce: %{0 => empty(hash_fn)} do
         acc ->
           previous_empty_hash = Map.get(acc, i - 1)
 
@@ -278,7 +280,7 @@ defmodule VariableMerkleTree do
           # If the final node was a left one, we have to compute one more parent
           # by hashing with an empty node of the appropriate level
           final_parents =
-            if final_left_sibling do
+            if final_left_sibling && i < depth do
               [
                 hash(hash_fn, final_left_sibling <> Map.get(empty_nodes, i))
                 | parents
@@ -304,6 +306,11 @@ defmodule VariableMerkleTree do
 
   defp minimal_depth(length, depth) when 1 <<< depth >= length do
     depth
+  end
+
+  defp minimal_depth(length, depth) when depth >= @max_depth do
+    raise ArgumentError,
+          "#{length} leaves exceed the maximum tree depth of #{@max_depth}"
   end
 
   defp minimal_depth(length, depth) do
