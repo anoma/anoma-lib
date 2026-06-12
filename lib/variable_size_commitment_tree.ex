@@ -45,8 +45,8 @@ defmodule VariableMerkleTree do
     # index of the next commitment added
     field(:next_index, non_neg_integer(), default: 0)
 
-    # how many commitments can the current tree support
-    field(:capacity, non_neg_integer(), default: 1)
+    # current depth, supporting up to 2^depth commitments
+    field(:depth, non_neg_integer(), default: 0)
 
     # leaf map with leaves as keys
     # for efficient path computation
@@ -111,11 +111,11 @@ defmodule VariableMerkleTree do
   end
 
   @doc """
-  I calculate the depth of a given tree
+  I return the depth of a given tree
   """
   @spec depth(t()) :: non_neg_integer()
   def depth(tree) do
-    tree.capacity |> :math.log2() |> trunc()
+    tree.depth
   end
 
   @doc """
@@ -141,15 +141,12 @@ defmodule VariableMerkleTree do
           {Map.put(map_acc, leaf, index_acc), index_acc + 1}
       end
 
-    {depth, capacity} =
-      if new_commitment_length > tree.capacity do
+    depth =
+      if new_commitment_length > 1 <<< tree.depth do
         # If the tree capacity is exceeded, calculate the new minimal depth
-        new_depth =
-          new_commitment_length |> :math.log2() |> :math.ceil() |> trunc()
-
-        {new_depth, Integer.pow(2, new_depth)}
+        minimal_depth(new_commitment_length)
       else
-        {depth(tree), tree.capacity}
+        tree.depth
       end
 
     # Add leaves and recompute needed intermediary nodes
@@ -167,7 +164,7 @@ defmodule VariableMerkleTree do
       tree
       | nodes: new_nodes,
         next_index: new_commitment_length,
-        capacity: capacity,
+        depth: depth,
         leaf_map: new_leaf_map
     }
   end
@@ -300,5 +297,16 @@ defmodule VariableMerkleTree do
   @spec is_left(non_neg_integer()) :: boolean()
   defp is_left(index) do
     (index &&& 1) == 0
+  end
+
+  @spec minimal_depth(pos_integer(), non_neg_integer()) :: non_neg_integer()
+  defp minimal_depth(length, depth \\ 0)
+
+  defp minimal_depth(length, depth) when 1 <<< depth >= length do
+    depth
+  end
+
+  defp minimal_depth(length, depth) do
+    minimal_depth(length, depth + 1)
   end
 end

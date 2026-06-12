@@ -25,7 +25,7 @@ defmodule Examples.EVariableMerkleTree do
     tree = VariableMerkleTree.new(&keccak/1)
 
     assert VariableMerkleTree.root(tree) == keccak("EMPTY")
-    assert tree.capacity == 1
+    assert tree.depth == 0
     assert tree.next_index == 0
 
     tree
