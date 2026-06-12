@@ -189,11 +189,9 @@ defmodule VariableMerkleTree do
             # Take the current level of the tree
             current_nodes = Map.get(tree.nodes, i)
 
-            is_left = (index &&& 1) == 0
-
             empty = Map.get(tree.empty_nodes, i)
 
-            if is_left do
+            if left?(index) do
               # If the node is a left one, take its right sibling
               sibling = Map.get(current_nodes, index + 1, empty)
 
@@ -253,7 +251,7 @@ defmodule VariableMerkleTree do
 
           # If the first node is the right one, fetch its sibling
           initial_left_sibling =
-            if is_left(index) do
+            if left?(index) do
               nil
             else
               Map.get(current_nodes, index - 1)
@@ -296,8 +294,8 @@ defmodule VariableMerkleTree do
     new_nodes
   end
 
-  @spec is_left(non_neg_integer()) :: boolean()
-  defp is_left(index) do
+  @spec left?(non_neg_integer()) :: boolean()
+  defp left?(index) do
     (index &&& 1) == 0
   end
 
