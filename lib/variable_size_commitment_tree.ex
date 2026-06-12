@@ -23,8 +23,8 @@ defmodule VariableMerkleTree do
   @typedoc """
   I am the type of the merkle path.
 
-  I represent a list of node neighbors alongside a flag telling whether the
-  neighbor is left or right.
+  I represent a list of node neighbors alongside a flag set when the
+  neighbor is the left child, matching arm-openvm's `Sibling` struct.
   """
   @type path() :: [{hash_size, boolean}]
 
@@ -192,7 +192,7 @@ defmodule VariableMerkleTree do
 
               # Hash the node on the left and sibling on the right
               # The index of its parents is going to be index / 2
-              {path ++ [{sibling, true}], hash(hash_fn, node <> sibling),
+              {path ++ [{sibling, false}], hash(hash_fn, node <> sibling),
                div(index, 2)}
             else
               # If the node is a right one, take its left sibling
@@ -200,7 +200,7 @@ defmodule VariableMerkleTree do
 
               # Hash the node on the right and sibling on the left
               # The index of its parents is going to be (index - 1) / 2
-              {path ++ [{sibling, false}], hash(hash_fn, sibling <> node),
+              {path ++ [{sibling, true}], hash(hash_fn, sibling <> node),
                div(index - 1, 2)}
             end
         end
@@ -218,9 +218,9 @@ defmodule VariableMerkleTree do
     calculated_root =
       Enum.reduce(path, leaf, fn {neighbour, is_left}, acc ->
         if is_left do
-          hash(hash_fn, acc <> neighbour)
-        else
           hash(hash_fn, neighbour <> acc)
+        else
+          hash(hash_fn, acc <> neighbour)
         end
       end)
 
