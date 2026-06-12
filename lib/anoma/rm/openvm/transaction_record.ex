@@ -22,7 +22,7 @@ defmodule Anoma.RM.OpenVM.TransactionRecord do
   end
 
   @doc """
-  Verify the ransaction in one shot via the NIF.
+  Verify the transaction in one shot via the NIF.
   """
   @spec verify(t()) :: boolean() | {:error, term()}
   def verify(%TransactionRecord{bytes: bytes}) do
@@ -60,15 +60,26 @@ defmodule Anoma.RM.OpenVM.TransactionRecord do
   end
 
   @spec from_noun(Noun.t()) :: {:ok, t()} | :error
-  def from_noun(bytes) when is_binary(bytes) or is_integer(bytes) do
-    {:ok, %TransactionRecord{bytes: Noun.atom_integer_to_binary(bytes)}}
+  def from_noun([size | bytes])
+      when (is_binary(bytes) or is_integer(bytes)) and
+             (is_binary(size) or is_integer(size)) do
+    {:ok,
+     %TransactionRecord{
+       bytes:
+         Noun.atom_integer_to_binary(
+           bytes,
+           Noun.atom_binary_to_integer(size)
+         )
+     }}
   end
 
   def from_noun(_), do: :error
 
   defimpl Noun.Nounable, for: TransactionRecord do
     @impl true
-    def to_noun(%TransactionRecord{bytes: bytes}), do: bytes
+    def to_noun(%TransactionRecord{bytes: bytes}) do
+      [byte_size(bytes) | bytes]
+    end
   end
 end
 
